@@ -13,7 +13,7 @@ build_release: clean restore
 	dotnet pack -c Release
 
 test:
-	cd fable.test/ && dotnet test --no-restore --verbosity normal
+	cd fable.test/ && dotnet test --no-restore
 
 release: clean restore build
 	./release.sh
