@@ -1,6 +1,5 @@
 module Freedle.CSV
 open Frame
-open Types
 
 let parseCSV (s:string) : UntypedFrame =
     let lines = s.Split('\n')
