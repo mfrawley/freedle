@@ -12,6 +12,6 @@ type TestClass () =
         Assert.IsTrue(r.Length = 1)
         
         let r1 = rowFromStr "a,b"
-        Assert.IsTrue(r1.Length = 2)
+        Assert.IsTrue(r1.Length = 233)
         Assert.AreEqual(r1.[0], "a")
         Assert.AreEqual(r1.[1], "b")
