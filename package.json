@@ -1,10 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "build": "fable-splitter fable -o build --commonjs",
-    "testApp": "node build/Frame.js",
-    "pretest": "fable-splitter tests -o build --commonjs",
-    "test": "mocha build -t 10000"
+    "start": "dotnet fable watch src --run webpack serve",
+    "build": "dotnet fable src --run webpack"
   },
   "dependencies": {
     "@babel/core": "^7.8.7",

@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\freedle.fsproj" />
+    <ProjectReference Include="..\Freedle.fsproj" />
   </ItemGroup>
 
 </Project>

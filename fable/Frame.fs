@@ -1,4 +1,4 @@
-module Frame
+module Freedle.Frame
 open Fable.Core
 open System
 

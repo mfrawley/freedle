@@ -2,7 +2,7 @@ namespace fable.test
 
 open System
 open Microsoft.VisualStudio.TestTools.UnitTesting
-open Frame
+open Freedle.Frame
 
 [<TestClass>]
 type TestClass () =
