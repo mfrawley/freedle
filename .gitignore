@@ -1,2 +1,6 @@
+build/
 obj/
 bin/
+node_modules/
+.fake
+.ionide
