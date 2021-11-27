@@ -33,5 +33,6 @@ jobs:
       run: dotnet build --configuration Release --no-restore
     
     - name: Test
-      run: cd fable.test/ && dotnet test --no-restore
+      run: cd fable.test/ 
+      run: dotnet test --no-restore
 
