@@ -1,6 +1,9 @@
 module Freedle.CSV
 open Frame
+<<<<<<< HEAD
 open Types
+=======
+>>>>>>> a32213c (fix compilation order)
 
 let parseCSV (s:string) : UntypedFrame =
     let lines = s.Split('\n')

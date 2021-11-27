@@ -14,7 +14,8 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="fable/**/*.fs" />
+    <Compile Include="fable/Frame.fs" />
+    <Compile Include="fable/CSV.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fable.Browser.Dom" Version="2.4.0" />
