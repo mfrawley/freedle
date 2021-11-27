@@ -31,8 +31,8 @@ jobs:
       run: dotnet restore --verbosity normal
       
     - name: Build
-      run: dotnet build --configuration Release --no-restore --verbosity normal
+      run: dotnet build --configuration Release --no-restore
     
     - name: Test
-      run: dotnet test fable.test/fable.test.fsproj --verbosity normal
+      run: dotnet test fable.test/fable.test.fsproj
 
