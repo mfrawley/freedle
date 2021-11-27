@@ -33,5 +33,5 @@ jobs:
       run: dotnet build --configuration Release --no-restore
     
     - name: Test
-      run: cd fable.test/; dotnet test --no-restore
+      run: dotnet test fable.test/fable.test.fsproj --no-restore
 
