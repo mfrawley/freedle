@@ -5,9 +5,8 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Freedle</RootNamespace>
     <PackageId>Freedle</PackageId>
-    <Version>0.0.4-alpha</Version>
+    <!-- <Version>0.0.4-alpha</Version> -->
     <Authors>Mark Frawley</Authors>
-    <!-- <Company>Mark Frawley</Company> -->
     <Description>
     An early prototype of a dataframe library for Fable apps.
     </Description>
