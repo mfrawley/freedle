@@ -1,18 +1,46 @@
 module Freedle.Frame
 open Fable.Core
 open System
-
+open Fable.Core
+open FSharp.Reflection
 type Column<'a> = {
     name: string
     typedData: 'a array
 }
 
+let getRecordFieldTuples (recc: Type) : (string * string)[] = 
+    let fields = FSharp.Reflection.FSharpType.GetRecordFields(recc)
+    
+    let fieldNames = 
+        fields 
+        |> Array.map (fun field -> (field.Name, field.PropertyType.FullName) )
+    fieldNames
+
+let getMapFromRecordType (value: Type) : Map<string, obj> =
+    FSharpType.GetRecordFields(value)
+    |> Seq.fold
+        (fun acc field ->
+            let fieldValue = field.GetValue value
+            acc.Add (field.Name, fieldValue)
+        )
+        Map.empty
+    
 type FloatCol = Column<float>
 type IntCol = Column<int>
 type StrCol = Column<string>
 type DateCol = Column<DateTime>
 type DateOptionCol = Column<DateTime option>
 type BoolCol = Column<bool>
+
+type TypedColumn = 
+    | F of FloatCol 
+    | I of IntCol 
+    | S of StrCol
+    | D of DateCol
+    | DO of DateOptionCol
+    | B of BoolCol
+
+type TypedFrame = TypedColumn list
 
 type UntypedColumn = {
     name: string
@@ -32,7 +60,7 @@ exception MissingDataException of string
 
 let rowFromStr (s:string) : string[] = s.Split(',')
 
-let buildCol (name:string) (i:int) (rows: string array array) =
+let buildCol (name:string) (i:int) (rows: string array array) : UntypedColumn =
     { 
         // (Array.map (fun (row: string array) -> row.[i]) rows)
         data= (Array.map (fun (row: string array) -> row.[i]) rows)
@@ -194,7 +222,13 @@ let filterByIndex (col:Column<'a>) (indexArr: bool array) : Column<'a> =
         |> (Array.map Option.get)
     
     { col with typedData = filtered}
-    
+
+type Filter<'a> = {
+    col:Column<'a>
+    predicate: ('a -> bool)
+}
+type FilterList<'a> = Filter<'a> list
+
 let filterCol (col:Column<'a>) (predicate: ('a -> bool)) : Column<'a> =
     let indexes = getIndexesMatchingPredicate col predicate
     filterByIndex col indexes
@@ -203,3 +237,4 @@ let aggArrays (typedDataArrs : 'a array array) (aggFn: 'a array -> 'a) =
     typedDataArrs
     |> Array.map aggFn
     |> aggFn
+
