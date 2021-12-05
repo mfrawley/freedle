@@ -40,19 +40,40 @@ type TypedColumn =
     | DO of DateOptionCol
     | B of BoolCol
 
-type TypedFrame = TypedColumn list
-
-type UntypedColumn = {
-    name: string
-    data: string array
-}
+type TypedFrame = 
+    {
+    columns: TypedColumn list}
+    
+    member this.GetColumnByName(name:string) =
+        this.columns
+        |> List.filter (fun col -> 
+            let colname =
+                match col with 
+                | F c -> c.name
+                | I c -> c.name
+                | S c -> c.name
+                | D c -> c.name 
+                | DO c -> c.name
+                | B c -> c.name
+            colname = name
+            )
+        |> List.head
 
 type RawRow = string array
 type RawCol = string array
+type UntypedColumn = {
+    name: string
+    data: string array
+}    
 
-type UntypedFrame = {
-    columns: UntypedColumn list
-}
+type UntypedFrame = 
+    {
+    columns: UntypedColumn list}
+    
+    member this.GetColumnByName(name:string) =
+        this.columns
+        |> List.filter (fun col -> col.name = name)
+        |> List.head
  
 exception MissingDataException of string
 
@@ -82,7 +103,7 @@ let toIntCol c (fill: int option) : IntCol =
             ) data)
     }
 
-let toFloatCol (c:UntypedColumn) (fill: float option) =
+let inline toFloatCol (c:UntypedColumn) (fill: float option) =
     {
         name=c.name;
         typedData=(Array.map (fun (x:string) -> 
@@ -91,8 +112,16 @@ let toFloatCol (c:UntypedColumn) (fill: float option) =
                 match fill with
                     | None -> nan
                     | _ -> fill.Value
-            | _ -> (JS.parseFloat x))
-            c.data)
+            | _ -> 
+                let res:float =
+                    #if FABLE_COMPILER
+                        JS.parseFloat(x)
+                    #else
+                        Double.Parse(x)
+                    #endif
+                res
+        )
+        c.data)
     }
 
 let toStrCol c =
@@ -238,3 +267,26 @@ let aggArrays (typedDataArrs : 'a array array) (aggFn: 'a array -> 'a) =
     |> Array.map aggFn
     |> aggFn
 
+
+let getColumnByName (name:string) (frame:UntypedFrame) =
+    frame.columns
+    |> List.filter (fun col -> col.name = name)
+    |> List.head
+
+let genTypedFrame (rowType: 'a) (untypedFrame: UntypedFrame) : TypedFrame =
+    let fields = getRecordFieldTuples(rowType.GetType())
+    let cols = 
+        fields
+        |> Array.map (fun (fieldName, fieldType) -> 
+            match fieldType with
+            | "System.Double" -> 
+                (F (toFloatCol (getColumnByName fieldName untypedFrame) (Some 0.0)) )
+            | "System.String" -> 
+                (S (toStrCol (getColumnByName fieldName untypedFrame)))
+            | "System.Boolean" -> 
+                (B (toBoolCol (getColumnByName fieldName untypedFrame) (Some false)) )                
+            | _ ->
+                failwith $"Unrecognised field type {fieldType}"
+            )
+        |> Array.toList
+    {columns=cols}
