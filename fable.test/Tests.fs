@@ -4,6 +4,8 @@ open System
 open Microsoft.VisualStudio.TestTools.UnitTesting
 open Freedle.Frame
 open Freedle.CSV
+open FSharp.Reflection
+
 type FooRecord = {
     yeah: string
     nope: int
@@ -11,10 +13,10 @@ type FooRecord = {
 type AbRecord = 
     {
     a: double
-    b: bool }
+    b: bool option }
     static member Default =
         { a = 0.0
-          b = false }
+          b = Some false }
 
 [<TestClass>]
 type TestClass () =
@@ -54,29 +56,28 @@ type TestClass () =
         let fieldNames = getRecordFieldTuples(fooInst.GetType())
         
         Assert.AreEqual ((fst fieldNames.[0]), "yeah")
-        Assert.AreEqual ((snd fieldNames.[0]), "System.String")
+        let s:Type = (snd fieldNames.[0])
+        printfn "s: %A" s
+        Assert.AreEqual(s, typeof<string>)
 
         Assert.AreEqual ((fst fieldNames.[1]), "nope")
-        Assert.AreEqual ((snd fieldNames.[1]), "System.Int32")
+        Assert.AreEqual ((snd fieldNames.[1]), typeof<int32>)
 
     [<TestMethod>]
-    member _.TestgetRecordFieldsOnCol () =
+    member _.TestGetRecordFieldsOnCol () =
         let myFloatCol = {
             name="sfds"
             typedData = [|0.0|]
         }
         let fieldNames = getRecordFieldTuples(myFloatCol.GetType())
-        printfn "%A" fieldNames
-        Assert.AreEqual ((fst fieldNames.[0]), "name")
-        Assert.AreEqual ((snd fieldNames.[0]), "System.String")
 
-        Assert.AreEqual ((fst fieldNames.[1]), "typedData")
-        Assert.AreEqual ((snd fieldNames.[1]), "System.Double[]")
+        Assert.AreEqual ((fst fieldNames.[0]), "name")
+        Assert.AreEqual ((snd fieldNames.[0]), typeof<string> )
 
 
     [<TestMethod>]
     member _.TestGenTypedFrame () =
-        let rawStr="a,b\n0.0,true\n2.0,false"
+        let rawStr="a,b\n0.0,true\n2.0,"
         let untyped = parseCSV rawStr
         Assert.AreEqual(["a";"b"], untyped.columns |> List.map (fun c -> c.name))
 
@@ -88,5 +89,11 @@ type TestClass () =
         let expected = [|0.0; 2.0|]
         match typedCol with
         | F c -> Assert.AreEqual(c.typedData.[0], expected.[0])
+        | _ -> Assert.IsTrue(false)
+
+        let typedCol = typedFrame.GetColumnByName("b")
+        let expectedBO = [|Some true; None|]
+        match typedCol with
+        | BO c -> Assert.AreEqual(c.typedData.[1], expectedBO.[1])
         | _ -> Assert.IsTrue(false)
         

@@ -8,29 +8,22 @@ type Column<'a> = {
     typedData: 'a array
 }
 
-let getRecordFieldTuples (recc: Type) : (string * string)[] = 
+let getRecordFieldTuples (recc: Type) : (string * Type)[] = 
     let fields = FSharp.Reflection.FSharpType.GetRecordFields(recc)
     
     let fieldNames = 
         fields 
-        |> Array.map (fun field -> (field.Name, field.PropertyType.FullName) )
+        |> Array.map (fun field -> (field.Name, field.PropertyType) )
     fieldNames
 
-let getMapFromRecordType (value: Type) : Map<string, obj> =
-    FSharpType.GetRecordFields(value)
-    |> Seq.fold
-        (fun acc field ->
-            let fieldValue = field.GetValue value
-            acc.Add (field.Name, fieldValue)
-        )
-        Map.empty
-    
+   
 type FloatCol = Column<float>
 type IntCol = Column<int>
 type StrCol = Column<string>
 type DateCol = Column<DateTime>
 type DateOptionCol = Column<DateTime option>
 type BoolCol = Column<bool>
+type BoolOptionCol = Column<bool option>
 
 type TypedColumn = 
     | F of FloatCol 
@@ -39,6 +32,7 @@ type TypedColumn =
     | D of DateCol
     | DO of DateOptionCol
     | B of BoolCol
+    | BO of BoolOptionCol
 
 type TypedFrame = 
     {
@@ -55,6 +49,7 @@ type TypedFrame =
                 | D c -> c.name 
                 | DO c -> c.name
                 | B c -> c.name
+                | BO c -> c.name
             colname = name
             )
         |> List.head
@@ -76,8 +71,17 @@ type UntypedFrame =
         |> List.head
  
 exception MissingDataException of string
+exception BadDataException of string
 
 // let col_names (f:Frame<obj>) : string list = List.map (fun col -> col.name) f.columns
+
+// convenient, functional TryParse wrappers returning option<'a>
+let tryParseWith (tryParseFunc: string -> bool * _) = tryParseFunc >> function
+    | true, v    -> Some v
+    | false, _   -> None
+
+let parseDate = tryParseWith System.DateTime.TryParse
+let parseBool = tryParseWith System.Boolean.TryParse
 
 let rowFromStr (s:string) : string[] = s.Split(',')
 
@@ -130,18 +134,30 @@ let toStrCol c =
         typedData=c.data
     }
 
-let tryParseBool (s:string) =
-    let l = s.ToLower()
-    match l with
-    | "false" -> false
-    | "true" -> true
-    | _ -> invalidArg s $"Invalid boolean {s}"
-
 let toBoolCol c (fill: bool option) =
     {
         name=c.name;
-        typedData=(Array.map tryParseBool c.data)
+        typedData=(
+            Array.mapi (fun i s -> 
+                match (parseBool s) with 
+                | Some b -> b
+                | None ->
+                    invalidArg (sprintf "column: %s" c.name) (sprintf "failed parsing '%s' as bool, on line: %d." s (i+1))
+
+            ) c.data
+            )
     }
+
+let toBoolOptionCol c =
+    {
+        name=c.name;
+        typedData=(
+            Array.map (fun s -> 
+                parseBool s
+
+            ) c.data
+            )
+    }    
 
 let toDateTimeCol c =
     let verboseParse s =
@@ -267,7 +283,6 @@ let aggArrays (typedDataArrs : 'a array array) (aggFn: 'a array -> 'a) =
     |> Array.map aggFn
     |> aggFn
 
-
 let getColumnByName (name:string) (frame:UntypedFrame) =
     frame.columns
     |> List.filter (fun col -> col.name = name)
@@ -277,15 +292,17 @@ let genTypedFrame (rowType: 'a) (untypedFrame: UntypedFrame) : TypedFrame =
     let fields = getRecordFieldTuples(rowType.GetType())
     let cols = 
         fields
-        |> Array.map (fun (fieldName, fieldType) -> 
-            match fieldType with
-            | "System.Double" -> 
+        |> Array.map (fun (fieldName, fieldType) ->
+            printfn "fieldType: %A" fieldType
+            if fieldType = typeof<double> then
                 (F (toFloatCol (getColumnByName fieldName untypedFrame) (Some 0.0)) )
-            | "System.String" -> 
+            elif fieldType = typeof<string> then
                 (S (toStrCol (getColumnByName fieldName untypedFrame)))
-            | "System.Boolean" -> 
-                (B (toBoolCol (getColumnByName fieldName untypedFrame) (Some false)) )                
-            | _ ->
+            elif fieldType = typeof<bool> then
+                (B (toBoolCol (getColumnByName fieldName untypedFrame) (Some false)) )
+            elif fieldType = typeof<bool option> then
+                (BO (toBoolOptionCol (getColumnByName fieldName untypedFrame)) )
+            else
                 failwith $"Unrecognised field type {fieldType}"
             )
         |> Array.toList
